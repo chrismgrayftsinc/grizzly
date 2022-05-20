@@ -27,13 +27,6 @@ func (h *GrafanaRuleGroupHandler) Kind() string {
 
 // Validate returns the uid of resource
 func (h *GrafanaRuleGroupHandler) Validate(resource grizzly.Resource) error {
-	uid, exist := resource.GetSpecString("uid")
-	if exist {
-		if uid != resource.Name() {
-			return fmt.Errorf("uid '%s' and name '%s', don't match", uid, resource.Name())
-		}
-	}
-
 	return nil
 }
 

@@ -58,6 +58,20 @@ func getRemoteGrafanaRuleGroup(uid string) (*grizzly.Resource, error) {
 		return nil, grizzly.APIErr{Err: err, Body: body}
 	}
 
+	delete(g, "name")
+	for _, r := range g.Rules() {
+		rule := r.(map[string]interface{})
+		alert := rule["grafana_alert"].(map[string]interface{})
+		delete(alert, "namespace_id")
+		delete(alert, "namespace_uid")
+		delete(alert, "orgId")
+		delete(alert, "rule_group")
+		delete(alert, "id")
+		delete(alert, "uid")
+		delete(alert, "updated")
+		delete(alert, "version")
+	}
+
 	resource := grizzly.NewResource(h.APIVersion(), h.Kind(), name, g)
 	resource.SetMetadata("folder", folder)
 	return &resource, nil
@@ -150,6 +164,18 @@ func postGrafanaRuleGroup(resource grizzly.Resource) error {
 
 type RuleGroupConfig map[string]interface{}
 
+func (g *RuleGroupConfig) Rules() []interface{} {
+	rules, _ := (*g)["rules"]
+	return rules.([]interface{})
+}
+
+type GettableExtendedRuleNode map[string]interface{}
+
+func (r *GettableExtendedRuleNode) GrafanaAlert() map[string]interface{} {
+	rules, _ := (*r)["grafana_alert"]
+	return rules.(map[string]interface{})
+}
+
 type GettableRuleGroupConfig map[string]interface{}
 
 func (d *GettableRuleGroupConfig) Name() string {
@@ -158,10 +184,6 @@ func (d *GettableRuleGroupConfig) Name() string {
 		return ""
 	}
 	return name.(string)
-}
-
-type GettableExtendedRuleNode struct {
-	GrafanaAlert GrafanaRule `json:"grafana_alert"`
 }
 
 type GrafanaRule map[string]interface{}
