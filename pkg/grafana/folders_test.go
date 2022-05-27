@@ -82,7 +82,6 @@ func TestFolders(t *testing.T) {
 
 		grafanaErr := err.(ErrNon200Response)
 		require.Error(t, err)
-		// TODO: change to 409 after this PR is in the new Grafana version https://github.com/grafana/grafana/pull/36429
-		require.Equal(t, grafanaErr.Response.StatusCode, 400)
+		require.Equal(t, grafanaErr.Response.StatusCode, 409)
 	})
 }
