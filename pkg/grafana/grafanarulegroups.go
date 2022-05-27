@@ -42,7 +42,7 @@ func getRemoteGrafanaRuleGroup(uid string) (*grizzly.Resource, error) {
 
 	switch resp.StatusCode {
 	case http.StatusNotFound:
-		return nil, fmt.Errorf("NOT FOUND")
+		return nil, fmt.Errorf("not found")
 	default:
 		if resp.StatusCode >= 400 {
 			return nil, errors.New(resp.Status)
@@ -134,6 +134,7 @@ func postGrafanaRuleGroup(resource grizzly.Resource) error {
 		return err
 	}
 
+	resource.Spec()["name"] = resource.Name()
 	bs, err := json.Marshal(resource["spec"])
 	if err != nil {
 		return err
@@ -160,6 +161,38 @@ func postGrafanaRuleGroup(resource grizzly.Resource) error {
 	default:
 		return NewErrNon200Response("rules", resource.Name(), resp)
 	}
+}
+
+func deleteGrafanaRuleGroup(uid string) error {
+	parts := strings.SplitN(uid, ".", 2)
+	folder := parts[0]
+	name := parts[1]
+
+	client := new(http.Client)
+	grafanaURL, err := getGrafanaURL(fmt.Sprintf("api/ruler/grafana/api/v1/rules/%s/%s", folder, name))
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("DELETE", grafanaURL, nil)
+	if err != nil {
+		return err
+	}
+
+	if grafanaToken, ok := getGrafanaToken(); ok {
+		req.Header.Set("Authorization", "Bearer "+grafanaToken)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return errors.New(resp.Status)
+	}
+	return nil
 }
 
 type RuleGroupConfig map[string]interface{}
