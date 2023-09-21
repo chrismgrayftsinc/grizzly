@@ -67,7 +67,6 @@ func getRemoteGrafanaRuleGroup(uid string) (*grizzly.Resource, error) {
 		delete(alert, "orgId")
 		delete(alert, "rule_group")
 		delete(alert, "id")
-		delete(alert, "uid")
 		delete(alert, "updated")
 		delete(alert, "version")
 	}
@@ -159,8 +158,53 @@ func postGrafanaRuleGroup(resource grizzly.Resource) error {
 	case http.StatusAccepted:
 		return nil
 	default:
-		return NewErrNon200Response("rules", resource.Name(), resp)
+		r, err := updateResourceToHaveUids(&resource)
+		if err != nil {
+			return NewErrNon200Response("rules", resource.Name(), resp)
+		}
+		return postGrafanaRuleGroup(*r)
+
 	}
+}
+
+func updateResourceToHaveUids(resource *grizzly.Resource) (*grizzly.Resource, error) {
+	folder := resource.GetMetadata("folder")
+	r, err := getRemoteGrafanaRuleGroup(folder + "." + resource.Name())
+	if err != nil {
+		return nil, err
+	}
+	t := make(map[string]string)
+	for _, rule := range r.Spec()["rules"].([]interface{}) {
+		if grafana_alert, ok := (rule.(map[string]interface{}))["grafana_alert"]; ok {
+			if uid, ok := (grafana_alert.(map[string]interface{}))["uid"]; ok {
+				// Find the matching grafana_alert in resource and update it.
+				if title, ok := grafana_alert.(map[string]interface{})["title"]; ok {
+					t[title.(string)] = uid.(string)
+				}
+			}
+		}
+	}
+	uidsAdded := false
+	for _, rule := range resource.Spec()["rules"].([]interface{}) {
+		if grafana_alert, ok := (rule.(map[string]interface{}))["grafana_alert"]; ok {
+			// Find the matching grafana_alert in resource and update it.
+			g := grafana_alert.(map[string]interface{})
+			if _, ok := g["uid"]; ok {
+				continue
+			}
+
+			if title, ok := g["title"]; ok {
+				if uid, ok := t[title.(string)]; ok {
+					g["uid"] = uid
+					uidsAdded = true
+				}
+			}
+		}
+	}
+	if !uidsAdded {
+		return nil, errors.New("No UIDs to add")
+	}
+	return resource, nil
 }
 
 func deleteGrafanaRuleGroup(uid string) error {
