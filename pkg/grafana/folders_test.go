@@ -21,12 +21,12 @@ func TestFolders(t *testing.T) {
 
 		require.Equal(t, resource.APIVersion(), "grizzly.grafana.com/v1alpha1")
 		require.Equal(t, resource.Name(), "abcdefghi")
-		require.Len(t, resource.Spec(), 13)
+		require.Len(t, resource.Spec(), 14)
 	})
 
 	t.Run("get remote folder - not found", func(t *testing.T) {
 		_, err := getRemoteFolder("dummy")
-		require.EqualError(t, err, "couldn't fetch folder 'dummy' from remote: couldn't fetch folder 'dummy' from remote: not found")
+		require.EqualError(t, err, "couldn't fetch folder 'dummy' from remote: not found")
 	})
 
 	t.Run("get folders list", func(t *testing.T) {

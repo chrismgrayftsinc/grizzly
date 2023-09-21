@@ -26,12 +26,12 @@ func TestDatasources(t *testing.T) {
 
 		require.Equal(t, resource.APIVersion(), "grizzly.grafana.com/v1alpha1")
 		require.Equal(t, resource.Name(), "AppDynamics")
-		require.Len(t, resource.Spec(), 20)
+		require.Len(t, resource.Spec(), 18)
 	})
 
 	t.Run("get remote datasource - not found", func(t *testing.T) {
 		_, err := getRemoteDatasource("dummy")
-		require.EqualError(t, err, "couldn't fetch folder 'dummy' from remote: not found")
+		require.Equal(t, err, grizzly.ErrNotFound)
 	})
 
 	t.Run("get remote datasources list", func(t *testing.T) {
